@@ -34,15 +34,6 @@ struct
             toInt_wr(Term, 0, 0)
         end;
 
-    fun getFirstToken(Z) = "Z"
-      | getFirstToken(T) = "T"
-      | getFirstToken(F) = "F"
-      | getFirstToken(P( t )) = "P"
-      | getFirstToken(S( t )) = "S"
-      | getFirstToken(IZ( t )) = "IZ"
-      | getFirstToken(GTZ( t )) = "GTZ"
-      | getFirstToken(ITE(t, t1, t0)) = "ITE"
-
     fun toString Term = 
         let
             fun toString_wr(VAR(x)) = x
@@ -58,54 +49,71 @@ struct
         in
             toString_wr(Term)
         end;
-    
+
+    fun getFirstToken(Z) = "Z"
+      | getFirstToken(T) = "T"
+      | getFirstToken(F) = "F"
+      | getFirstToken(P( t )) = "P"
+      | getFirstToken(S( t )) = "S"
+      | getFirstToken(IZ( t )) = "IZ"
+      | getFirstToken(GTZ( t )) = "GTZ"
+      | getFirstToken(ITE(t, t1, t0)) = "ITE"
+      
+    fun getRestToken(P( t )) = t
+      | getRestToken(S( t )) = t
+      
+    fun checkConsistency(Z, _) = true
+      | checkConsistency(P( t ), "P") = checkConsistency(t, "P")
+      | checkConsistency(S( t ), "S") = checkConsistency(t, "S")
+      | checkConsistency(_, _) = false
+
     fun normalize Term =
         let
-            fun normalize_wr(Z) = (Z, 0)
-              | normalize_wr(T) = (T, 0)
-              | normalize_wr(F) = (F, 0)
-              | normalize_wr(S( P( t ) )) = (#1(normalize_wr(t)), 1)   
-              | normalize_wr(P( S( t ) )) = (#1(normalize_wr(t)), 1)
+            fun normalize_wr(Z) = Z
+              | normalize_wr(T) = T
+              | normalize_wr(F) = F
               | normalize_wr(S( t )) =
                     let
-                        val (norm, isUpd) = normalize_wr(t)
+                        val norm = normalize_wr(t)
+                        val tok = getFirstToken(norm)
                         val usless = (print(toString(norm));print(" <- S end\n");5)
                     in
-                        if isUpd = 0 then (S(norm), 0)
-                        else normalize_wr(S(norm))
+                        if tok = "P" then getRestToken(norm)
+                        else S(norm)
                     end
               | normalize_wr(P( t )) =
                     let
-                        val (norm, isUpd) = normalize_wr(t)
+                        val norm = normalize_wr(t)
+                        val tok = getFirstToken(norm)
                         val usless = (print(toString(norm));print(" <- P end\n");5)
                     in
-                        if isUpd = 0 then (P(norm), 0)
-                        else normalize_wr(P(norm))
+                        if tok = "S" then getRestToken(norm)
+                        else P(norm)
                     end
               | normalize_wr(IZ( t )) = 
                     let
-                        val (norm, isUpd) = normalize_wr(t)
+                        val norm = normalize_wr(t)
+                        val tok = getFirstToken(norm)
                         val usless = (print(toString(norm));print(" <- IZ end\n");5)
                     in
-                        if isUpd = 0 then
-                            if norm = Z then (T, 1)
-                            else (F, 1) (* Handle case of not T/F *)
-                        else normalize_wr(IZ(norm))
+                        if tok = "Z" then T
+                        else if tok = "P" andalso checkConsistency(norm, "P") then F
+                        else if tok = "S" andalso checkConsistency(norm, "S") then F
+                        else IZ(norm)
                     end
               | normalize_wr(GTZ( t )) = 
                 let
-                    val (norm, isUpd) = normalize_wr(t)
+                    val norm = normalize_wr(t)
+                    val tok = getFirstToken(norm)
                     val usless = (print(toString(norm));print(" <- GTZ end\n");5)
                 in
-                    if isUpd = 0 then
-                        if norm = Z then (F, 1)
-                        else (T, 1)
-                    else normalize_wr(GTZ(norm))
+                    if tok = "Z" then F
+                    else if tok = "P" andalso checkConsistency(norm, "P") then F
+                    else if tok = "S" andalso checkConsistency(norm, "S") then T
+                    else GTZ(norm)
                 end;
-                (* Wrong at normalize(GTZ(P(P(S(S(P Z)))))); *)
-            val (sol, _) = normalize_wr(Term)      
         in
-            sol
+            normalize_wr(Term)
         end;
 
 
