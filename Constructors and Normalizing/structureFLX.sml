@@ -34,17 +34,21 @@ struct
             toInt_wr(Term, 0, 0)
         end;
 
-    (* ERROR *)
+
     fun toString Term = 
         let
-            fun toString_wr(Z, L_terms) = List.rev("Z"::L_terms)
-              | toString_wr(T, L_terms) = List.rev("T"::L_terms)
-              | toString_wr(F, L_terms) = List.rev("F"::L_terms)
-              | toString_wr(P t, L_terms) = toString_wr(t, "(P "::L_terms)
-              | toString_wr(S t, L_terms) = toString_wr(t, "(S "::L_terms)
+            fun toString_wr(VAR(x)) = x
+              | toString_wr(Z) = "Z"
+              | toString_wr(T) = "T"
+              | toString_wr(F) = "F"
+              | toString_wr(P t) = "(P " ^ toString_wr(t) ^ ")"
+              | toString_wr(S t) = "(S " ^ toString_wr(t) ^ ")"
+              | toString_wr(IZ t) = "(IZ " ^ toString_wr(t) ^ ")"
+              | toString_wr(GTZ t) = "(GTZ " ^ toString_wr(t) ^ ")"
+              | toString_wr(ITE(t, t1, t0)) = "(ITE <" ^ toString_wr(t) ^ "," ^ toString_wr(t1) ^ "," ^ toString_wr(t0) ^ ">)"
               
         in
-            String.concat( toString_wr( Term, [] ) )
+            toString_wr(Term)
         end;
     
 
