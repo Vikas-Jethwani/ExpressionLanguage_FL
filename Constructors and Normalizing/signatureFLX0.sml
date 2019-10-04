@@ -15,6 +15,7 @@ sig
     exception Not_int
 
     val toString: term -> string
+    val normalize: term -> term
     val fromInt: int -> term
     val toInt: term -> int
 end (* sig *)
