@@ -1,7 +1,8 @@
 use "signatureFLX.sml" ;
-
+(* Author : Vikas Jethwani - MCS192573 *)
 structure Flx : FLX =
 struct
+    (* DataType definitions and Exceptions *)
     datatype term = VAR of string   (* variable *)
                   | Z               (* zero *)
                   | T               (* true *)
@@ -16,19 +17,22 @@ struct
     exception Not_nf ;
     exception Not_int ;
 
+    (* fromInt : int -> term *)
     fun fromInt 0 = Z
       | fromInt curr =
             if curr > 0 then S (fromInt(curr-1))
             else P (fromInt(curr+1)) ;
 
+    (* toInt : term -> int *)
     fun toInt Term =
             let
+                (* to determine type of exception : eg. toInt(P (P T)) *)
                 fun which_err(Z) = raise Not_nf
                   | which_err(P t) = which_err(t)
                   | which_err(S t) = which_err(t)
                   | which_err(_) = raise Not_int ;
 
-                (* fun toInt_wr(Term, sign, curr) *)
+                (* toInt_wr(Term, sign, curr) *)
                 fun toInt_wr(Z, _, curr) = curr
                   | toInt_wr(P t, 1, _) = which_err(t)
                   | toInt_wr(S t, ~1, _) = which_err(t)
@@ -39,6 +43,7 @@ struct
                 toInt_wr(Term, 0, 0)
             end ;
 
+    (* toString : term -> string *)
     fun toString Term = 
             let
                 fun toString_wr(VAR(x)) = x
@@ -54,8 +59,10 @@ struct
                 toString_wr(Term)
             end ;
     
+    (* fromString : string -> term *)
     fun fromString str = 
             let
+                (* find_terms(char_list, tokens_processed, terms, prev_char) *)
                 fun find_terms([], [], [t], _) = t
                   | find_terms(#"Z"::left, tokens, terms, _) = find_terms(left, tokens, (Z::terms), "Z")
                   | find_terms(#"T"::left, tokens, terms, _) = find_terms(left, tokens, (T::terms), "T")
@@ -82,15 +89,18 @@ struct
                             if Char.isLower(c) then find_terms(left, tokens, (VAR (Char.toString(c)))::terms, "v")
                             else raise Not_wellformed
                   | find_terms(_, _, _, _) = raise Not_wellformed ;
+
+                val terms = find_terms(explode str, [], [], "")
             in
-                 find_terms(explode str, [], [], "")
+                (* sanity check *)
+                if (toString(terms))=str then terms
+                else raise Not_wellformed
             end ;
 
-
+    (* normalize : term -> term *)
     fun normalize Term =
             let
-                exception Not_normalizable ;
-
+                (* for reduction in IZ and GTZ by seeing the first constructor *)
                 fun checkConsistency(Z, _) = true
                   | checkConsistency(P( t ), "P") = checkConsistency(t, "P")
                   | checkConsistency(S( t ), "S") = checkConsistency(t, "S")
@@ -123,7 +133,7 @@ struct
                         in
                             ( case norm of
                                 Z       => T
-                              | P term' => if checkConsistency(norm, "P") then F (*optimize by replacing to term' *)
+                              | P term' => if checkConsistency(norm, "P") then F
                                            else IZ(norm)
                               | S term' => if checkConsistency(norm, "S") then F
                                            else IZ(norm)
@@ -140,7 +150,7 @@ struct
                                        else GTZ(norm)
                           | S term' => if checkConsistency(norm, "S") then T
                                        else GTZ(norm)
-                          | _       => IZ(norm)
+                          | _       => GTZ(norm)
                         )
                     end
                   | normalize_wr(ITE( t0,t1,t2 )) = 
@@ -156,10 +166,9 @@ struct
                                            else ITE(norm0, norm1, norm2)
                             )
                         end
-                  | normalize_wr(_) = raise Not_normalizable ;
+                  | normalize_wr(VAR t) = VAR t ;
             in
                 normalize_wr(Term)
             end ;
 
 end ; (* struct *)
-open Flx ;
