@@ -20,10 +20,10 @@ sig
     exception Not_int
     exception Not_welltyped
                   
-    (*val fromString: string -> lterm*)
+    val fromString: string -> lterm
     val toString: lterm -> string
     val fromInt: int -> lterm
     val toInt: lterm -> int
     (*val isWellTyped: lterm -> bool*)
-    (*val betanf: lterm -> lterm*)
+    val betanf: lterm -> lterm
 end (* sig *)
