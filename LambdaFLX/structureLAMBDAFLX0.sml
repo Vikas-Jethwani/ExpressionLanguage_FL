@@ -120,6 +120,8 @@ struct
                       | replace_wr(Z, _, _) = Z
                       | replace_wr(T, _, _) = T
                       | replace_wr(F, _, _) = F
+                      | replace_wr(P t, v, M) = P( replace_wr(t, v, M) )
+                      | replace_wr(S t, v, M) = S( replace_wr(t, v, M) )
                       | replace_wr(IZ t, v, M) = IZ( replace_wr(t, v, M) )
                       | replace_wr(GTZ t, v, M) = GTZ( replace_wr(t, v, M) )
                       | replace_wr(ITE(t0, t1, t2), v, M) = ITE( replace_wr(t0, v, M), replace_wr(t1, v, M), replace_wr(t2, v, M) )
@@ -128,6 +130,60 @@ struct
                 in
                     replace_wr(L, v, M)
                 end
+
+
+            fun is_Present(x, []) = (x^"1", [(x,1)])
+              | is_Present(x, (y, count)::taill) =
+                    if x=y then (x^(Int.toString(count+1)), (y, count+1)::taill)
+                    else
+                        let val (v,c) = is_Present(x, taill) in (v, (y, count)::c) end
+
+            fun preprocess(VAR x, unique) = (VAR x, unique)
+              | preprocess(Z, unique) = (Z, unique)
+              | preprocess(T, unique) = (T, unique)
+              | preprocess(F, unique) = (F, unique)
+              | preprocess(P t, unique) = 
+                    let
+                        val (Term, uniq) = preprocess(t, unique)
+                        val usless = (print("At P :");print(toString(Term));print("\n"); 5)
+                    in (P(Term), uniq) end
+              | preprocess(S t, unique) = 
+                    let
+                        val (Term, uniq) = preprocess(t, unique)
+                        val usless = (print("At S :");print(toString(Term));print("\n"); 5)
+                    in (S(Term), uniq) end
+              | preprocess(IZ t, unique) = 
+                    let
+                        val (Term, uniq) = preprocess(t, unique)
+                        val usless = (print("At IZ :");print(toString(Term));print("\n"); 5)
+                    in (IZ(Term), uniq) end
+              | preprocess(GTZ t, unique) = 
+                    let
+                        val (Term, uniq) = preprocess(t, unique)
+                        val usless = (print("At GTZ :");print(toString(Term));print("\n"); 5)
+                    in (GTZ(Term), uniq) end
+              | preprocess(ITE(t0, t1, t2), unique) = 
+                    let
+                        val (Term0, uniq0) = preprocess(t0, unique)
+                        val (Term1, uniq1) = preprocess(t1, uniq0)
+                        val (Term2, uniq2) = preprocess(t2, uniq1)
+                        val usless = (print("At ITE :");print(toString(Term0));print("--");print(toString(Term1));print("--");print(toString(Term2));print("\n"); 5)
+                    in (ITE(Term0, Term1, Term2), uniq2) end
+              | preprocess(APP(t0, t1), unique) = 
+                    let
+                        val (Term0, uniq0) = preprocess(t0, unique)
+                        val (Term1, uniq1) = preprocess(t1, uniq0)
+                        val usless = (print("At APP :");print(toString(Term0));print("--");print(toString(Term1));print("\n"); 5)
+                    in (APP(Term0, Term1), uniq1) end
+              | preprocess(LAMBDA(VAR x, t), unique) = 
+                    let
+                        val (v, uniq) = is_Present(x, unique)
+                        val half_processed = replace_term(t, VAR x, VAR v)
+                        val usless = (print(toString(half_processed));print("\n"); 5)
+                        val (Term, uniq1) = preprocess(half_processed, uniq)
+                    in (LAMBDA(VAR v, Term), uniq1) end
+
+
             fun betanf_wr(VAR v) = VAR v
               | betanf_wr(Z) = Z
               | betanf_wr(T) = T
@@ -140,8 +196,13 @@ struct
               | betanf_wr(LAMBDA(v, t)) = LAMBDA( v, betanf_wr(t) )
               | betanf_wr(APP( LAMBDA(VAR v, L), M )) = betanf_wr(replace_term(L, VAR v, M))
               | betanf_wr(APP( APP(x, y), M )) = betanf_wr( APP( betanf_wr(APP( x, y )), M) )
+
+          
+            
+            val preprocessed_Term = #1(preprocess(LTerm, []))
         in
-            betanf_wr(LTerm)
+            (*betanf_wr(preprocessed_Term)*)
+            preprocessed_Term
         end ;
 
 
