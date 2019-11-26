@@ -24,6 +24,6 @@ sig
     val toString: lterm -> string
     val fromInt: int -> lterm
     val toInt: lterm -> int
-    (*val isWellTyped: lterm -> bool*)
+    val isWellTyped: lterm -> bool
     val betanf: lterm -> lterm
 end (* sig *)
